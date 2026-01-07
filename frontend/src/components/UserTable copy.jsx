@@ -26,7 +26,9 @@ export default function UserTable(){
 
   useEffect(()=>{
     setLoading(true)
-    fetch('/api/customers/')
+    const apiBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : ''
+    const url = apiBase ? `${apiBase}/api/customers/` : '/api/customers/'
+    fetch(url)
       .then(r => r.json())
       .then(data=> setUsers(data))
       .catch(e => console.error('Fetch failed:', e))
