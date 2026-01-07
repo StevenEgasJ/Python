@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .routes import users
@@ -41,7 +41,14 @@ async def root():
     return {"status": "ok", "service": "users"}
 
 
+@app.get("/api/")
+async def api_root(request: Request):
+    """Convenience endpoint: returns the customers JSON so you can open /api/ in the browser."""
+    return await users.list_customers(request)
+
+
 if __name__ == "__main__":
+
     import uvicorn
 
     uvicorn.run(app, host=HOST, port=PORT)

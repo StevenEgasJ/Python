@@ -23,15 +23,27 @@ export default function UserTable(){
   const [sortKey, setSortKey] = useState('fullname')
   const [sortDir, setSortDir] = useState('asc')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(()=>{
     setLoading(true)
+    setError(null)
     const apiBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : ''
     const url = apiBase ? `${apiBase}/api/customers/` : '/api/customers/'
     fetch(url)
-      .then(r => r.json())
+      .then(async r => {
+        const text = await r.text()
+        const contentType = (r.headers.get('content-type') || '').toLowerCase()
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status} ${r.statusText}: ${text}`)
+        }
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got '${contentType}'. Response starts with: ${text.slice(0,200)}`)
+        }
+        return JSON.parse(text)
+      })
       .then(data=> setUsers(data))
-      .catch(e => console.error('Fetch failed:', e))
+      .catch(e => { console.error('Fetch failed:', e); setError(String(e)); setUsers([]) })
       .finally(()=> setLoading(false))
   },[])
 
@@ -71,9 +83,11 @@ export default function UserTable(){
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className="p-8 text-center text-gray-500" colSpan={5}>Loading…</td></tr>
+              <tr><td className="p-8 text-center text-gray-500" colSpan={6}>Loading…</td></tr>
+            ) : error ? (
+              <tr><td className="p-8 text-center text-red-500" colSpan={6}>Error: {error}</td></tr>
             ) : (filtered.length === 0 ? (
-              <tr><td className="p-8 text-center text-gray-500" colSpan={5}>No customers found</td></tr>
+              <tr><td className="p-8 text-center text-gray-500" colSpan={6}>No customers found</td></tr>
             ) : (
               filtered.map((u, idx) => (
                 <tr key={u.id} className={`border-b border-gray-100 hover:bg-gray-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
